@@ -685,7 +685,16 @@ if torch.backends.mps.is_available():
                 torch.int64,
                 torch.uint8,
                 torch.int8,
+                torch.float16,
+                torch.bfloat16,
             ],
+            # PCA singular vectors are sign-ambiguous; the new Metal randn in
+            # #182386 shifted the sequence so seeded sample inputs land on
+            # different sign choices than CPU.
+            "pca_lowrank": [torch.float32],
+            # logcumsumexp on complex inputs disagrees with CPU at branch
+            # cuts (off by 2*pi); shifted RNG exposed a sample on the cut.
+            "logcumsumexp": [torch.complex64],
             # Failures due to random output that they generate using
             # Philox engine causing mismatch with CPU results
             "multinomial": [
@@ -694,6 +703,7 @@ if torch.backends.mps.is_available():
                 torch.bfloat16,
             ],  # random results
             "uniform": [torch.float16, torch.float32, torch.bfloat16],
+            "normal": [torch.float16, torch.float32, torch.bfloat16],
             "rand_like": [torch.float16, torch.float32, torch.bfloat16],
             "randint": None,
             "randint_like": None,
@@ -718,7 +728,6 @@ if torch.backends.mps.is_available():
                 torch.float32,
                 torch.bfloat16,
             ],
-            "normal": [torch.float16, torch.float32, torch.bfloat16],
             "normalin_place": [torch.float16, torch.float32, torch.bfloat16],
             "normalnumber_mean": [torch.float16, torch.float32, torch.bfloat16],
             "nn.functional.alpha_dropout": [
@@ -937,6 +946,10 @@ if torch.backends.mps.is_available():
             "log_normal": [torch.float16, torch.float32],
             "cauchy": [torch.float16, torch.float32],
             "geometric": [torch.float16, torch.float32],
+            "normal": [torch.float16, torch.float32],
+            # topk picks different positions than CPU when the new RNG produces
+            # ties; the values still match but the index gather diverges.
+            "topk": [torch.float16],
             # CPU errors
             # derivative for zeta is not implemented
             "special.zeta": None,
@@ -969,6 +982,10 @@ if torch.backends.mps.is_available():
             "to_sparse": None,
             # Exception: the derivative for '_unique2' is not implemented.
             "unique": None,
+            # PCA singular vectors are sign-ambiguous; the new Metal randn in
+            # #182386 shifted the sequence so seeded sample inputs land on
+            # different sign choices than CPU.
+            "pca_lowrank": [torch.float32],
         }
 
         SKIPLIST_GRAD = {
